@@ -1,4 +1,4 @@
-package sidecar
+package sidejob
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type Job struct {
+type JobRunner struct {
 	ID           int
 	Name         string
 	Payload      []byte
@@ -17,10 +17,13 @@ type Job struct {
 	FailureCount int       `db:"failure_count"`
 	CreatedAt    time.Time `db:"created_at"`
 	Processing   bool
+	JobID        int `db:"job_id"`
+	Message      string
+	Terminal     bool
 	runnable     Runnable
 }
 
-func (o Job) HandleError(jobError error) {
+func (o JobRunner) HandleError(jobError error) {
 	log.Println("Handling error", jobError)
 	o.FailureCount++
 	tx, err := db.Begin()
@@ -39,7 +42,7 @@ func (o Job) HandleError(jobError error) {
 	OrPanic(err)
 }
 
-func (o Job) HandleSuccess() {
+func (o JobRunner) HandleSuccess() {
 	tx, err := db.Begin()
 	OrPanic(err)
 	tx.Exec("delete from jobs where id=?", o.ID)
@@ -48,7 +51,7 @@ func (o Job) HandleSuccess() {
 	OrPanic(err)
 }
 
-func (o Job) Start() (err error) {
+func (o JobRunner) Start() (err error) {
 	o.Name = fmt.Sprintf("%s", o.Payload)
 	log.Println("started job", o.Name)
 	defer func() {
@@ -75,4 +78,24 @@ func (o Job) Start() (err error) {
 	}
 	o.HandleSuccess()
 	return
+}
+
+func GetProcessingJobs() (jobs []JobRunner, err error) {
+	err = db.Select(&jobs, "select * from jobs where processing=1")
+	return jobs, err
+}
+
+func GetUnprocessedJobs() (jobs []JobRunner, err error) {
+	err = db.Select(&jobs, "select * from jobs where processing=0")
+	return jobs, err
+}
+
+func GetCompletedJobs() (jobs []JobRunner, err error) {
+	err = db.Select(&jobs, "select * from completed_jobs")
+	return jobs, err
+}
+
+func GetFailedJobs() (jobs []JobRunner, err error) {
+	err = db.Select(&jobs, "select * from failed_jobs")
+	return jobs, err
 }

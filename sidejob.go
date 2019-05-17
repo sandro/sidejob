@@ -1,9 +1,10 @@
-package sidecar
+package sidejob
 
 import (
 	"bytes"
 	"database/sql"
 	"encoding/gob"
+	"fmt"
 	"log"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 type Configuration struct {
 	DBConnectURI string
 	PollDuration time.Duration
+	MaxRetries   int
 }
 
 var Config Configuration
@@ -23,15 +25,14 @@ type Runnable interface {
 	RetryAt(int) time.Time
 }
 
-type BasicJob struct {
-}
+type BasicJob struct{}
 
 func (o BasicJob) Run() error {
 	return nil
 }
 
 func (o BasicJob) CanRetry(n int) bool {
-	if n < 5 {
+	if n < Config.MaxRetries {
 		return true
 	}
 	return false
@@ -42,11 +43,11 @@ func (o BasicJob) RetryAt(n int) time.Time {
 	return at
 }
 
-func Enqueue(runnable Runnable) error {
+func Enqueue(runnable Runnable) (int, error) {
 	return EnqueueAt(runnable, time.Now())
 }
 
-func EnqueueAt(runnable Runnable, at time.Time) (err error) {
+func EnqueueAt(runnable Runnable, at time.Time) (ID int, err error) {
 	at = at.UTC()
 	var payload bytes.Buffer
 	enc := gob.NewEncoder(&payload)
@@ -54,18 +55,26 @@ func EnqueueAt(runnable Runnable, at time.Time) (err error) {
 	if err != nil {
 		return
 	}
-	_, err = db.Exec("insert or ignore into jobs (payload, run_at) values(?, ?);", payload.Bytes(), DBTime(at))
+	res, err := db.Exec("insert or ignore into jobs (name, payload, run_at) values(?, ?, ?);", fmt.Sprintf("%T", runnable), payload.Bytes(), DBTime(at))
+	if err != nil {
+		return
+	}
+	id, err := res.LastInsertId()
+	ID = int(id)
 	return
 }
 
 func init() {
+	log.Println("Sidecar INIT")
 	Config = Configuration{
 		DBConnectURI: "sidecar.sqlite3",
 		PollDuration: time.Second,
+		MaxRetries:   5,
 	}
+	gob.Register(BasicJob{})
 }
 
-func reserveJobs() (jobs []Job, err error) {
+func reserveJobs() (jobs []JobRunner, err error) {
 	err = db.Select(&jobs, "select * from jobs where run_at <= ? and processing=0", time.Now().UTC().String())
 	if err != nil && err != sql.ErrNoRows {
 		return
@@ -88,7 +97,7 @@ func startJobs() {
 
 	for _, j := range jobs {
 		log.Println("have a job", j)
-		go func(job Job) {
+		go func(job JobRunner) {
 			job.Start()
 		}(j)
 	}
@@ -100,5 +109,11 @@ func Start() {
 		go func() {
 			startJobs()
 		}()
+	}
+}
+
+func OrPanic(err error) {
+	if err != nil {
+		log.Panic(err)
 	}
 }

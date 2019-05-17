@@ -1,4 +1,4 @@
-package sidecar
+package sidejob
 
 import (
 	"database/sql"
@@ -9,12 +9,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
-
-func OrPanic(err error) {
-	if err != nil {
-		log.Panic(err)
-	}
-}
 
 var db *sqlx.DB
 
@@ -56,9 +50,8 @@ func makeResultString(result sql.Result) string {
 
 var structure string = `
 	PRAGMA foreign_keys=ON;
-		-- (cast(CURRENT_TIMESTAMP as text)),
   create table if not exists jobs (
-	  id integer primary key,
+	  id integer primary key autoincrement,
 		payload blob not null,
 		created_at datetime not null default CURRENT_TIMESTAMP,
 		run_at datetime not null,
@@ -68,7 +61,7 @@ var structure string = `
 	);
 
   create table if not exists completed_jobs (
-	  id integer primary key,
+	  id integer primary key autoincrement,
 		name text not null,
 		payload blob not null,
 		failure_count integer not null,
@@ -77,17 +70,20 @@ var structure string = `
 	);
 
 	create table if not exists failed_jobs (
-	  id integer primary key,
+	  id integer primary key autoincrement,
 		job_id integer not null,
 		created_at datetime not null default CURRENT_TIMESTAMP,
-		name text,
-		message text,
+		name text not null,
+		message text not null,
 		terminal integer not null default 0 check (terminal in (0,1))
 	);
 
 	create table if not exists job_stats (
-	  id integer primary key,
-		succeeded integer,
-		failed integer
+	  id integer primary key autoincrement,
+		created_at datetime not null default CURRENT_TIMESTAMP,
+		count_success integer,
+		count_failure integer,
+		start_at datetime,
+		end_at datetime
 	);
 `

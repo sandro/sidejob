@@ -1,4 +1,4 @@
-module sidecar
+module sidejob
 
 go 1.12
 

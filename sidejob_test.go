@@ -1,7 +1,8 @@
-package sidecar
+package sidejob
 
 import (
 	"encoding/gob"
+	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -10,6 +11,7 @@ import (
 type TimeRecorder struct {
 	BasicJob
 	Name string
+	Time time.Time
 }
 
 func (o TimeRecorder) Run() error {
@@ -18,8 +20,12 @@ func (o TimeRecorder) Run() error {
 	_, err := db.Exec(`
 	  create table if not exists time_records(name text, time timestamp);
     insert into time_records (name, time) values (?,?);
-	`, o.Name, time.Now().UTC())
+	`, o.Name, o.Time.UTC())
 	return err
+}
+
+func init() {
+	gob.Register(TimeRecorder{})
 }
 
 // func (o TimeRecorder) CanRetry(n int) bool {
@@ -31,14 +37,13 @@ func removeTimeRecords() {
 }
 
 func TestEnqueue(t *testing.T) {
-	// defer removeTimeRecords()
+	defer removeTimeRecords()
 	log.Println("testing a thing")
-	gob.Register(TimeRecorder{})
-	Config.DBConnectURI = ":memory:"
+	// Config.DBConnectURI = ":memory:"
 	// Config.DBConnectURI = "test.sqlite3"
 	InitDB()
-	job := TimeRecorder{Name: "test1"}
-	err := Enqueue(job)
+	job := TimeRecorder{Name: "test1", Time: time.Unix(1558062306, 0)}
+	_, err := Enqueue(job)
 	OrPanic(err)
 	time.Sleep(time.Millisecond * 500)
 	startJobs()
@@ -47,7 +52,10 @@ func TestEnqueue(t *testing.T) {
 	result := make(map[string]interface{})
 	log.Println(row)
 	row.MapScan(result)
-	if result["name"] != "test1" || result["time"] == nil {
+	fmt.Println(result)
+	a := string(result["name"].([]byte)) == "test1"
+	b := result["time"].(time.Time).Equal(job.Time)
+	if !a || !b {
 		t.Error("job not successful")
 	}
 }
