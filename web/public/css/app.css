@@ -1,0 +1,38 @@
+/* https://coolors.co/cce8cc-f6efee-006992-7b2d26-f0f3f5 */
+/* https://coolors.co/e63946-f1faee-a8dadc-457b9d-1d3557 */
+
+.color-green {
+  color: rgba(204, 232, 204, 1);
+}
+.color-rose {
+  color: rgba(246, 239, 238, 1);
+}
+.color-blue {
+  color: rgba(0, 105, 146, 1);
+}
+.color-burgundy {
+  color: rgba(123, 45, 38, 1);
+}
+.color-white {
+  color: rgba(240, 243, 245, 1);
+}
+
+body {
+  background: #F5F7F8;
+}
+
+a, .btn, .btn.btn-link {
+  color: rgba(0, 105, 146, 1);
+}
+
+.columns {
+  margin-bottom: 1rem;
+}
+
+header {
+  margin-bottom: 1rem;
+}
+
+.trace {
+  width: 100px;
+}

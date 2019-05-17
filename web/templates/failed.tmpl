@@ -1,0 +1,39 @@
+{{ define "page" }}
+<div class="columns">
+  <div class="column col-12"><h1>Failed jobs</h1></div>
+</div>
+<div class="columns">
+  <div class="column col-12">
+    <h3>Failed Jobs</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Message</th>
+          <th>Trace</th>
+          <th>Terminal</th>
+          <th>Created at</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ range .failedJobs }}
+          <tr>
+            <td>{{.ID}}</td>
+            <td>{{.Name}}</td>
+            <td>{{.Message}}</td>
+            <td class="trace">
+              <!-- <pre> -->
+                <code>
+                  {{.Trace}}
+                </code>
+              <!-- </pre> -->
+            </td>
+            <td>{{.Terminal}}</td>
+            <td>{{.CreatedAt}}</td>
+        {{ end }}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{ end }}

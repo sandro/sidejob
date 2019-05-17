@@ -1,0 +1,65 @@
+{{ define "page" }}
+<div class="columns">
+  <div class="column col-12"><h1>Jobs</h1></div>
+</div>
+{{ if .processingJobs }}
+<div class="columns">
+  <div class="column col-12">
+    <h3>Processing Jobs</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Run at</th>
+          <th>Failure Count</th>
+          <th>Created at</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ range .processingJobs }}
+          <tr>
+            <td>{{.ID}}</td>
+            <td>{{.Name}}</td>
+            <td>{{.RunAt}}</td>
+            <td>{{.FailureCount}}</td>
+            <td>{{.CreatedAt}}</td>
+        {{ end }}
+      </tbody>
+    </table>
+  </div>
+</div>
+{{end}}
+
+{{ if .unprocessedJobs }}
+<div class="columns">
+  <div class="column col-12">
+
+    <h3>Unprocessed Jobs</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Run at</th>
+          <th>Failure Count</th>
+          <th>Created at</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ range .unprocessedJobs }}
+          <tr>
+            <td>{{.ID}}</td>
+            <td>{{.Name}}</td>
+            <td>{{.RunAt}}</td>
+            <td>{{.FailureCount}}</td>
+            <td>{{.CreatedAt}}</td>
+        {{ end }}
+      </tbody>
+    </table>
+
+  </div>
+</div>
+{{ end }}
+
+{{ end }}

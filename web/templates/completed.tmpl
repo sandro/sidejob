@@ -1,0 +1,51 @@
+{{ define "page" }}
+<div class="columns">
+  <div class="column col-12"><h1>Completed Jobs</h1></div>
+</div>
+<div class="columns">
+  <div class="column col-12">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Failure Count</th>
+          <th>Job ID</th>
+          <th>Created At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ range .completedJobs }}
+          <tr>
+            <td>{{.ID}}</td>
+            <td>{{.Name}}</td>
+            <td>{{.FailureCount}}</td>
+            <td>{{.JobID}}</td>
+            <td>{{.CreatedAt}}</td>
+        {{ end }}
+      </tbody>
+    </table>
+
+  </div>
+</div>
+<div class="columns">
+  <div class="column col-12">
+    <ul class="pagination">
+      {{ if eq .previousCursor 0 }}
+        <!-- <li class="page-item disabled"> -->
+        <!--   <a href="#">Previous</a> -->
+        <!-- </li> -->
+      {{ else }}
+        <li class="page-item">
+          <a href="?cursor={{.previousCursor}}">Previous</a>
+        </li>
+      {{ end}}
+      {{ if ne .nextCursor 0 }}
+        <li class="page-item">
+          <a href="?cursor={{.nextCursor}}">Next</a>
+        </li>
+      {{end}}
+    </ul>
+  </div>
+</div>
+{{ end }}
