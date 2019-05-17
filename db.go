@@ -2,6 +2,7 @@ package sidejob
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"log"
 	"time"
@@ -48,13 +49,34 @@ func makeResultString(result sql.Result) string {
 	return fmt.Sprintf(resultStr, id, n)
 }
 
+type NullTime struct {
+	Time  time.Time
+	Valid bool // Valid is true if Time is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (nt *NullTime) Scan(value interface{}) error {
+	nt.Time, nt.Valid = value.(time.Time)
+	return nil
+}
+
+// Value implements the driver Valuer interface.
+func (nt NullTime) Value() (driver.Value, error) {
+	if !nt.Valid {
+		return nil, nil
+	}
+	return nt.Time, nil
+}
+
 var structure string = `
 	PRAGMA foreign_keys=ON;
   create table if not exists jobs (
 	  id integer primary key autoincrement,
+		name text not null,
 		payload blob not null,
 		created_at datetime not null default CURRENT_TIMESTAMP,
 		run_at datetime not null,
+		finished_at datetime,
 		processing integer not null default 0 check (processing in (0,1)),
 		failure_count integer not null default 0,
 		unique(payload, run_at)
@@ -75,6 +97,7 @@ var structure string = `
 		created_at datetime not null default CURRENT_TIMESTAMP,
 		name text not null,
 		message text not null,
+		trace text,
 		terminal integer not null default 0 check (terminal in (0,1))
 	);
 

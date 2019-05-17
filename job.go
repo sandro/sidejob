@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"runtime/debug"
 	"time"
 )
 
@@ -14,12 +15,14 @@ type JobRunner struct {
 	Name         string
 	Payload      []byte
 	RunAt        time.Time `db:"run_at"`
+	FinishedAt   NullTime  `db:"finished_at"`
 	FailureCount int       `db:"failure_count"`
 	CreatedAt    time.Time `db:"created_at"`
 	Processing   bool
 	JobID        int `db:"job_id"`
 	Message      string
 	Terminal     bool
+	Trace        string
 	runnable     Runnable
 }
 
@@ -32,7 +35,7 @@ func (o JobRunner) HandleError(jobError error) {
 		log.Println("Can retry", o.ID, o.Name, jobError.Error())
 		o.RunAt = o.runnable.RetryAt(o.FailureCount).UTC()
 		tx.Exec("update jobs set failure_count=?, run_at=?, processing=0 where id=?", o.FailureCount, DBTime(o.RunAt), o.ID)
-		tx.Exec("insert into failed_jobs (job_id, name, message) values(?,?,?)", o.ID, o.Name, jobError.Error())
+		tx.Exec("insert into failed_jobs (job_id, name, message, trace) values(?,?,?,?)", o.ID, o.Name, jobError.Error(), string(debug.Stack()))
 	} else {
 		log.Println("Cannot retry")
 		tx.Exec("update jobs set failure_count=? where id=?", o.FailureCount, o.ID)
@@ -80,22 +83,43 @@ func (o JobRunner) Start() (err error) {
 	return
 }
 
+type GetJobsOption struct {
+	Cursor string
+	Limit  int
+}
+
 func GetProcessingJobs() (jobs []JobRunner, err error) {
-	err = db.Select(&jobs, "select * from jobs where processing=1")
+	err = db.Select(&jobs, "select * from jobs where processing=1 order by id desc")
 	return jobs, err
 }
 
 func GetUnprocessedJobs() (jobs []JobRunner, err error) {
-	err = db.Select(&jobs, "select * from jobs where processing=0")
+	err = db.Select(&jobs, "select * from jobs where processing=0 order by id desc")
 	return jobs, err
 }
 
-func GetCompletedJobs() (jobs []JobRunner, err error) {
-	err = db.Select(&jobs, "select * from completed_jobs")
-	return jobs, err
+func GetCompletedJobs(options GetJobsOption) (jobs []JobRunner, err error) {
+	var args []interface{}
+	sql := "select * from completed_jobs"
+	if options.Cursor != "" {
+		sql += " where id < ?"
+		args = append(args, options.Cursor)
+	}
+	sql += " order by id desc"
+	if options.Limit > 0 {
+		sql += " limit ?"
+		args = append(args, options.Limit)
+	}
+	return getJobsSql(sql, args...)
 }
 
 func GetFailedJobs() (jobs []JobRunner, err error) {
 	err = db.Select(&jobs, "select * from failed_jobs")
+	return jobs, err
+}
+
+func getJobsSql(sql string, args ...interface{}) (jobs []JobRunner, err error) {
+	log.Println("getJobsSql", sql, args)
+	err = db.Select(&jobs, sql, args...)
 	return jobs, err
 }

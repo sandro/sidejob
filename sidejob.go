@@ -6,10 +6,13 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"reflect"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 )
+
+var registeredStructs = map[string]struct{}{}
 
 type Configuration struct {
 	DBConnectURI string
@@ -43,11 +46,24 @@ func (o BasicJob) RetryAt(n int) time.Time {
 	return at
 }
 
+func registerForEncoding(runnable Runnable) {
+	rt := reflect.TypeOf(runnable)
+	name := rt.Name()
+	_, ok := registeredStructs[name]
+	log.Println("name is", name, ok)
+	if !ok {
+		gob.Register(runnable)
+		registeredStructs[name] = struct{}{}
+		log.Println("gob registered", registeredStructs)
+	}
+}
+
 func Enqueue(runnable Runnable) (int, error) {
 	return EnqueueAt(runnable, time.Now())
 }
 
 func EnqueueAt(runnable Runnable, at time.Time) (ID int, err error) {
+	// registerForEncoding(runnable)
 	at = at.UTC()
 	var payload bytes.Buffer
 	enc := gob.NewEncoder(&payload)
@@ -65,9 +81,9 @@ func EnqueueAt(runnable Runnable, at time.Time) (ID int, err error) {
 }
 
 func init() {
-	log.Println("Sidecar INIT")
+	log.Println("Sidejob INIT")
 	Config = Configuration{
-		DBConnectURI: "sidecar.sqlite3",
+		DBConnectURI: "sidejob.sqlite3",
 		PollDuration: time.Second,
 		MaxRetries:   5,
 	}
@@ -105,10 +121,10 @@ func startJobs() {
 
 func Start() {
 	for {
-		<-time.After(Config.PollDuration)
 		go func() {
 			startJobs()
 		}()
+		time.Sleep(Config.PollDuration)
 	}
 }
 

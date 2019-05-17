@@ -2,10 +2,13 @@ package sidejob
 
 import (
 	"encoding/gob"
+	"errors"
 	"fmt"
 	"log"
 	"testing"
 	"time"
+
+	qt "github.com/frankban/quicktest"
 )
 
 type TimeRecorder struct {
@@ -24,8 +27,16 @@ func (o TimeRecorder) Run() error {
 	return err
 }
 
+type failJob struct{ BasicJob }
+
+func (o failJob) Run() (err error) {
+	err = errors.New("failure")
+	return
+}
+
 func init() {
 	gob.Register(TimeRecorder{})
+	gob.Register(failJob{})
 }
 
 // func (o TimeRecorder) CanRetry(n int) bool {
@@ -58,4 +69,18 @@ func TestEnqueue(t *testing.T) {
 	if !a || !b {
 		t.Error("job not successful")
 	}
+}
+
+func TestEnqueueFailure(t *testing.T) {
+	c := qt.New(t)
+	InitDB()
+	job := failJob{}
+	_, err := Enqueue(job)
+	time.Sleep(time.Millisecond * 500)
+	startJobs()
+	time.Sleep(time.Millisecond * 500)
+	failures, err := GetFailedJobs()
+	OrPanic(err)
+	failure := failures[0]
+	c.Assert(failure.Name, qt.Equals, "sidejob.failJob")
 }
