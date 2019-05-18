@@ -1,4 +1,4 @@
-module sidejob
+module github.com/sandro/sidejob
 
 go 1.12
 
