@@ -26,7 +26,6 @@ type Runnable interface {
 	Run() error
 	CanRetry(int) bool
 	RetryAt(int) time.Time
-	SetSidejobID(int64)
 }
 
 type BasicJob struct {
@@ -47,10 +46,6 @@ func (o BasicJob) CanRetry(n int) bool {
 func (o BasicJob) RetryAt(n int) time.Time {
 	at := time.Now().Add(time.Duration(n) * time.Minute)
 	return at
-}
-
-func (o *BasicJob) SetSidejobID(n int64) {
-	o.SidejobID = n
 }
 
 func registerForEncoding(runnable Runnable) {
@@ -83,7 +78,6 @@ func EnqueueAt(runnable Runnable, at time.Time) (ID int64, err error) {
 		return
 	}
 	ID, err = res.LastInsertId()
-	runnable.SetSidejobID(ID)
 	return
 }
 
