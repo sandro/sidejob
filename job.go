@@ -75,7 +75,6 @@ func (o JobRunner) Start() (err error) {
 	}
 	o.Name = fmt.Sprintf("%T", o.runnable)
 	log.Println("real name", o.Name)
-	o.runnable.SetSidejobID(o.ID)
 	err = o.runnable.Run()
 	if err != nil {
 		o.HandleError(err)
