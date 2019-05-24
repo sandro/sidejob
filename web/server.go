@@ -4,8 +4,9 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
-	"sidejob"
 	"strconv"
+
+	"github.com/sandro/sidejob"
 
 	"github.com/gin-contrib/multitemplate"
 	"github.com/gin-gonic/gin"

@@ -2,6 +2,8 @@ package sidejob
 
 import (
 	"bytes"
+	"context"
+	"database/sql"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -11,7 +13,7 @@ import (
 )
 
 type JobRunner struct {
-	ID           int
+	ID           int64
 	Name         string
 	Payload      []byte
 	RunAt        time.Time `db:"run_at"`
@@ -19,7 +21,6 @@ type JobRunner struct {
 	FailureCount int       `db:"failure_count"`
 	CreatedAt    time.Time `db:"created_at"`
 	Processing   bool
-	JobID        int `db:"job_id"`
 	Message      string
 	Terminal     bool
 	Trace        string
@@ -35,11 +36,11 @@ func (o JobRunner) HandleError(jobError error) {
 		log.Println("Can retry", o.ID, o.Name, jobError.Error())
 		o.RunAt = o.runnable.RetryAt(o.FailureCount).UTC()
 		tx.Exec("update jobs set failure_count=?, run_at=?, processing=0 where id=?", o.FailureCount, DBTime(o.RunAt), o.ID)
-		tx.Exec("insert into failed_jobs (job_id, name, message, trace) values(?,?,?,?)", o.ID, o.Name, jobError.Error(), string(debug.Stack()))
+		tx.Exec("insert into failed_jobs (id, name, message, trace) values(?,?,?,?)", o.ID, o.Name, jobError.Error(), string(debug.Stack()))
 	} else {
 		log.Println("Cannot retry")
 		tx.Exec("update jobs set failure_count=? where id=?", o.FailureCount, o.ID)
-		tx.Exec("insert into failed_jobs (job_id, name, message, terminal) values(?,?,?,1)", o.ID, o.Name, jobError.Error())
+		tx.Exec("insert into failed_jobs (id, name, message, terminal) values(?,?,?,1)", o.ID, o.Name, jobError.Error())
 	}
 	err = tx.Commit()
 	OrPanic(err)
@@ -49,7 +50,7 @@ func (o JobRunner) HandleSuccess() {
 	tx, err := db.Begin()
 	OrPanic(err)
 	tx.Exec("delete from jobs where id=?", o.ID)
-	tx.Exec("insert into completed_jobs (name, payload, failure_count, job_id) values(?,?,?,?)", o.Name, o.Payload, o.FailureCount, o.ID)
+	tx.Exec("insert into completed_jobs (id, name, payload, failure_count, job_id) values(?,?,?,?,?)", o.ID, o.Name, o.Payload, o.FailureCount, o.ID)
 	err = tx.Commit()
 	OrPanic(err)
 }
@@ -74,6 +75,7 @@ func (o JobRunner) Start() (err error) {
 	}
 	o.Name = fmt.Sprintf("%T", o.runnable)
 	log.Println("real name", o.Name)
+	o.runnable.SetSidejobID(o.ID)
 	err = o.runnable.Run()
 	if err != nil {
 		o.HandleError(err)
@@ -122,4 +124,37 @@ func getJobsSql(sql string, args ...interface{}) (jobs []JobRunner, err error) {
 	log.Println("getJobsSql", sql, args)
 	err = db.Select(&jobs, sql, args...)
 	return jobs, err
+}
+
+func GetJobStatus(id int) (job JobRunner, err error) {
+	err = db.Get(&job, "select * from jobs where id=?", id)
+	return
+}
+
+func GetCompletedJob(id int) (job JobRunner, err error) {
+	err = db.Get(&job, "select * from completed_jobs where id=?", id)
+	return
+}
+
+func WaitOnJobComplete(id int, timeout time.Duration) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	complete := make(chan bool)
+	go func(c chan bool) {
+		for {
+			job, err := GetCompletedJob(id)
+			if err != nil && err != sql.ErrNoRows {
+				log.Panic(err)
+			} else if job.ID != 0 {
+				c <- true
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+	}(complete)
+	select {
+	case val := <-complete:
+		return val
+	case <-ctx.Done():
+		return false
+	}
 }

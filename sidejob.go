@@ -26,9 +26,12 @@ type Runnable interface {
 	Run() error
 	CanRetry(int) bool
 	RetryAt(int) time.Time
+	SetSidejobID(int64)
 }
 
-type BasicJob struct{}
+type BasicJob struct {
+	SidejobID int64
+}
 
 func (o BasicJob) Run() error {
 	return nil
@@ -46,6 +49,10 @@ func (o BasicJob) RetryAt(n int) time.Time {
 	return at
 }
 
+func (o BasicJob) SetSidejobID(n int64) {
+	o.SidejobID = n
+}
+
 func registerForEncoding(runnable Runnable) {
 	rt := reflect.TypeOf(runnable)
 	name := rt.Name()
@@ -58,11 +65,11 @@ func registerForEncoding(runnable Runnable) {
 	}
 }
 
-func Enqueue(runnable Runnable) (int, error) {
+func Enqueue(runnable Runnable) (int64, error) {
 	return EnqueueAt(runnable, time.Now())
 }
 
-func EnqueueAt(runnable Runnable, at time.Time) (ID int, err error) {
+func EnqueueAt(runnable Runnable, at time.Time) (ID int64, err error) {
 	// registerForEncoding(runnable)
 	at = at.UTC()
 	var payload bytes.Buffer
@@ -75,8 +82,8 @@ func EnqueueAt(runnable Runnable, at time.Time) (ID int, err error) {
 	if err != nil {
 		return
 	}
-	id, err := res.LastInsertId()
-	ID = int(id)
+	ID, err = res.LastInsertId()
+	runnable.SetSidejobID(ID)
 	return
 }
 
@@ -96,7 +103,7 @@ func reserveJobs() (jobs []JobRunner, err error) {
 		return
 	}
 	if len(jobs) > 0 {
-		var ids []int
+		var ids []int64
 		for _, j := range jobs {
 			ids = append(ids, j.ID)
 		}

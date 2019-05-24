@@ -77,32 +77,30 @@ var structure string = `
 		created_at datetime not null default CURRENT_TIMESTAMP,
 		run_at datetime not null,
 		finished_at datetime,
-		processing integer not null default 0 check (processing in (0,1)),
+		processing boolean not null default 0 check (processing in (0,1)),
 		failure_count integer not null default 0,
 		unique(payload, run_at)
 	);
 
   create table if not exists completed_jobs (
-	  id integer primary key autoincrement,
+	  id int primary key,
 		name text not null,
 		payload blob not null,
 		failure_count integer not null,
-		job_id integer not null,
 		created_at datetime not null default CURRENT_TIMESTAMP
-	);
+	) without rowid;
 
 	create table if not exists failed_jobs (
-	  id integer primary key autoincrement,
-		job_id integer not null,
+	  id integer primary key,
 		created_at datetime not null default CURRENT_TIMESTAMP,
 		name text not null,
 		message text not null,
 		trace text,
-		terminal integer not null default 0 check (terminal in (0,1))
-	);
+		terminal boolean not null default 0 check (terminal in (0,1))
+	) without rowid;
 
 	create table if not exists job_stats (
-	  id integer primary key autoincrement,
+	  id integer primary key,
 		created_at datetime not null default CURRENT_TIMESTAMP,
 		count_success integer,
 		count_failure integer,
