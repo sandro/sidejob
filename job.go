@@ -87,7 +87,7 @@ func (o JobRunner) Start() (err error) {
 
 type GetJobsOption struct {
 	Cursor string
-	Limit  int
+	Limit  int64
 }
 
 func GetProcessingJobs() (jobs []JobRunner, err error) {

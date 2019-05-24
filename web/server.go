@@ -41,12 +41,12 @@ func Start() {
 		}
 		completedJobs, err := sidejob.GetCompletedJobs(options)
 		OrPanic(err)
-		var nextCursor int
-		var previousCursor int
-		if len(completedJobs) == options.Limit {
+		var nextCursor int64
+		var previousCursor int64
+		if len(completedJobs) == int(options.Limit) {
 			nextCursor = completedJobs[len(completedJobs)-1].ID
 			if cursor != "" {
-				ii, err := strconv.Atoi(cursor)
+				ii, err := strconv.ParseInt(cursor, 10, 0)
 				OrPanic(err)
 				previousCursor = ii + options.Limit
 			}
