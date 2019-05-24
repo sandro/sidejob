@@ -49,7 +49,7 @@ func (o BasicJob) RetryAt(n int) time.Time {
 	return at
 }
 
-func (o BasicJob) SetSidejobID(n int64) {
+func (o *BasicJob) SetSidejobID(n int64) {
 	o.SidejobID = n
 }
 
