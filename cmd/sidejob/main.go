@@ -43,12 +43,14 @@ Use the subcommand 'web' to start the web interface:
 	if len(flag.Args()) == 1 {
 		switch flag.Arg(0) {
 		case "web":
+			sidejob.InitDB()
 			web.Start()
 		default:
 			flag.Usage()
 			os.Exit(1)
 		}
 	} else {
+		sidejob.InitDB()
 		sidejob.Start()
 	}
 }

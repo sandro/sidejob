@@ -15,7 +15,6 @@ import (
 var PageLimit = 2
 
 func Start() {
-	sidejob.InitDB()
 	router := gin.Default()
 	// router.LoadHTMLGlob("./web/templates/*")
 	router.HTMLRender = loadTemplates("./web/templates")
