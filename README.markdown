@@ -6,7 +6,6 @@ Install
 
 ```
 go get github.com/sandro/sidejob/...
-
 ```
 
 Running jobs
