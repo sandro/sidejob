@@ -36,11 +36,11 @@ func (o JobRunner) HandleError(jobError error) {
 		log.Println("Can retry", o.ID, o.Name, jobError.Error())
 		o.RunAt = o.runnable.RetryAt(o.FailureCount).UTC()
 		tx.Exec("update jobs set failure_count=?, run_at=?, processing=0 where id=?", o.FailureCount, DBTime(o.RunAt), o.ID)
-		tx.Exec("insert into failed_jobs (id, name, message, trace) values(?,?,?,?)", o.ID, o.Name, jobError.Error(), string(debug.Stack()))
+		tx.Exec("insert into failed_jobs (job_id, name, message, trace) values(?,?,?,?)", o.ID, o.Name, jobError.Error(), string(debug.Stack()))
 	} else {
 		log.Println("Cannot retry")
 		tx.Exec("update jobs set failure_count=? where id=?", o.FailureCount, o.ID)
-		tx.Exec("insert into failed_jobs (id, name, message, terminal) values(?,?,?,1)", o.ID, o.Name, jobError.Error())
+		tx.Exec("insert into failed_jobs (job_id, name, message, terminal) values(?,?,?,1)", o.ID, o.Name, jobError.Error())
 	}
 	err = tx.Commit()
 	OrPanic(err)

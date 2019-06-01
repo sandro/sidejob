@@ -92,6 +92,7 @@ var structure string = `
 
 	create table if not exists failed_jobs (
 	  id integer primary key,
+		job_id integer,
 		created_at datetime not null default CURRENT_TIMESTAMP,
 		name text not null,
 		message text not null,
