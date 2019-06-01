@@ -42,10 +42,6 @@ github.com/modern-go/reflect2 v1.0.1 h1:9f412s+6RmYXLWZSEzVVgPGK7C2PphHj5RJrvfx9
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/sandro/sidejob/web v0.0.0-20190518194207-ec24d2d7ff64 h1:2HL2EmcdHK6LECQ7BmW1RTlV9+yR1/QcGM8LWu+yCxk=
-github.com/sandro/sidejob/web v0.0.0-20190518194207-ec24d2d7ff64/go.mod h1:kTcz7qkG8i1hX+0w+t8ZLHFU+RgE+V522I4eL039v54=
-github.com/sandro/sidejob/web v0.0.0-20190524130525-ca9f75412868 h1:6PbgQMadP8FtbhT6wbYuMvSuSp7/n+RT91PdOyL1UZo=
-github.com/sandro/sidejob/web v0.0.0-20190524130525-ca9f75412868/go.mod h1:kTcz7qkG8i1hX+0w+t8ZLHFU+RgE+V522I4eL039v54=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=

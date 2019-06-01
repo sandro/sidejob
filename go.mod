@@ -8,7 +8,8 @@ require (
 	github.com/gin-gonic/gin v1.4.0 // indirect
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/mattn/go-sqlite3 v1.10.0
-	github.com/sandro/sidejob/web v0.0.0-20190524130525-ca9f75412868 // indirect
+	github.com/sandro/sidejob/web v0.0.0-20190524130525-ca9f75412868
+	google.golang.org/appengine v1.6.0 // indirect
 )
 
 replace github.com/sandro/sidejob/web => ./web
