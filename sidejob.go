@@ -51,11 +51,13 @@ func (o BasicJob) RetryAt(n int) time.Time {
 func registerForEncoding(runnable Runnable) {
 	rt := reflect.TypeOf(runnable)
 	name := rt.Name()
-	_, ok := registeredStructs[name]
-	log.Println("name is", name, ok)
+	fqn := rt.PkgPath() + "." + name
+	_, ok := registeredStructs[fqn]
+	log.Println("name is", name, fqn, ok)
 	if !ok {
 		gob.Register(runnable)
-		registeredStructs[name] = struct{}{}
+		gob.RegisterName(fqn, runnable)
+		registeredStructs[fqn] = struct{}{}
 		log.Println("gob registered", registeredStructs)
 	}
 }
