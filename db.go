@@ -98,7 +98,7 @@ var structure string = `
 		message text not null,
 		trace text,
 		terminal boolean not null default 0 check (terminal in (0,1))
-	) without rowid;
+	);
 
 	create table if not exists job_stats (
 	  id integer primary key,
