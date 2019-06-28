@@ -35,12 +35,16 @@ func (o JobRunner) HandleError(jobError error) {
 	if o.runnable.CanRetry(o.FailureCount) {
 		log.Println("Can retry", o.ID, o.Name, jobError.Error())
 		o.RunAt = o.runnable.RetryAt(o.FailureCount).UTC()
-		tx.Exec("update jobs set failure_count=?, run_at=?, processing=0 where id=?", o.FailureCount, DBTime(o.RunAt), o.ID)
-		tx.Exec("insert into failed_jobs (job_id, name, message, trace) values(?,?,?,?)", o.ID, o.Name, jobError.Error(), string(debug.Stack()))
+		_, err = tx.Exec("update jobs set failure_count=?, run_at=?, processing=0 where id=?", o.FailureCount, DBTime(o.RunAt), o.ID)
+		OrPanic(err)
+		_, err = tx.Exec("insert into failed_jobs (job_id, name, message, trace) values(?,?,?,?)", o.ID, o.Name, jobError.Error(), string(debug.Stack()))
+		OrPanic(err)
 	} else {
 		log.Println("Cannot retry")
-		tx.Exec("update jobs set failure_count=? where id=?", o.FailureCount, o.ID)
-		tx.Exec("insert into failed_jobs (job_id, name, message, terminal) values(?,?,?,1)", o.ID, o.Name, jobError.Error())
+		_, err = tx.Exec("update jobs set failure_count=? where id=?", o.FailureCount, o.ID)
+		OrPanic(err)
+		_, err = tx.Exec("insert into failed_jobs (job_id, name, message, terminal) values(?,?,?,1)", o.ID, o.Name, jobError.Error())
+		OrPanic(err)
 	}
 	err = tx.Commit()
 	OrPanic(err)
@@ -49,8 +53,10 @@ func (o JobRunner) HandleError(jobError error) {
 func (o JobRunner) HandleSuccess() {
 	tx, err := db.Begin()
 	OrPanic(err)
-	tx.Exec("delete from jobs where id=?", o.ID)
-	tx.Exec("insert into completed_jobs (id, name, payload, failure_count, job_id) values(?,?,?,?,?)", o.ID, o.Name, o.Payload, o.FailureCount, o.ID)
+	_, err = tx.Exec("delete from jobs where id=?", o.ID)
+	OrPanic(err)
+	_, err = tx.Exec("insert into completed_jobs (id, name, payload, failure_count) values(?,?,?,?)", o.ID, o.Name, o.Payload, o.FailureCount)
+	OrPanic(err)
 	err = tx.Commit()
 	OrPanic(err)
 }
@@ -61,7 +67,7 @@ func (o JobRunner) Start() (err error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			log.Println("recovered", r)
+			log.Println("sidejob recovered", r)
 			o.HandleError(errors.New(fmt.Sprintf("Panic recovery: %#v", r)))
 		}
 	}()
